@@ -59,8 +59,8 @@ static u32 pstate_reg_to_pstate(u64 val)
         case T8010:
         case T8011:
         case T8012:
-        case T8015:
         case T8132:
+        case T8015:
         case T8103:
         case T6000:
         case T6001:
