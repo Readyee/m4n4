@@ -14,6 +14,8 @@
 #define DART_T8020_CONFIG      0x60
 #define DART_T8020_CONFIG_LOCK BIT(15)
 
+
+
 #define DART_T8020_ERROR              0x40
 #define DART_T8020_ERROR_STREAM_SHIFT 24
 #define DART_T8020_ERROR_STREAM_MASK  0xf
@@ -55,8 +57,10 @@
 #define DART_PTE_SP_END           GENMASK(51, 40)
 #define DART_T8020_PTE_OFFSET     GENMASK(39, 14)
 #define DART_T6000_PTE_OFFSET     GENMASK(39, 10)
+#define DART_T8132_PTE_OFFSET     GENMASK(31, 10)
 #define DART_T8020_PTE_DISABLE_SP BIT(1)
 #define DART_T6000_PTE_REALTIME   BIT(1)
+#define DART_8132_PTE_REALTIME    BIT(1)
 #define DART_PTE_VALID            BIT(0)
 
 #define DART_T8110_TTBR_OFF   0x1400
@@ -141,7 +145,7 @@ static void dart_t8110_tlb_invalidate(dart_dev_t *dart)
             FIELD_PREP(DART_T8110_TLB_CMD_OP, DART_T8110_TLB_CMD_OP_FLUSH_SID) |
                 FIELD_PREP(DART_T8110_TLB_CMD_STREAM, dart->device));
 
-    if (poll32(dart->regs + DART_T8110_TLB_CMD_OP, DART_T8110_TLB_CMD_BUSY, 0, 100))
+    if (poll32(dart->regs + DART_T8110_TLB_CMD, DART_T8110_TLB_CMD_BUSY, 0, 100))
         printf("dart: DART_T8110_TLB_CMD_BUSY did not clear.\n");
 }
 
@@ -166,6 +170,22 @@ const struct dart_params dart_t6000 = {
     .pte_flags =
         FIELD_PREP(DART_PTE_SP_END, 0xfff) | FIELD_PREP(DART_PTE_SP_START, 0) | DART_PTE_VALID,
     .offset_mask = DART_T6000_PTE_OFFSET,
+    .tcr_enabled = DART_T8020_TCR_TRANSLATE_ENABLE,
+    .tcr_disabled = DART_T8020_TCR_BYPASS_DAPF | DART_T8020_TCR_BYPASS_DART,
+    .tcr_off = DART_T8020_TCR_OFF,
+    .ttbr_valid = DART_T8020_TTBR_VALID,
+    .ttbr_addr = DART_T8020_TTBR_ADDR,
+    .ttbr_shift = DART_T8020_TTBR_SHIFT,
+    .ttbr_off = DART_T8020_TTBR_OFF,
+    .ttbr_count = 4,
+    .tlb_invalidate = dart_t8020_tlb_invalidate,
+};
+
+const struct dart_params dart_t8132 = {
+
+    .sid_count = 32,
+    .pte_flags = FIELD_PREP(DART_PTE_SP_END, 0xfff) | FIELD_PREP(DART_PTE_SP_START, 0) | DART_PTE_VALID,
+    .offset_mask = DART_T8132_PTE_OFFSET,
     .tcr_enabled = DART_T8020_TCR_TRANSLATE_ENABLE,
     .tcr_disabled = DART_T8020_TCR_BYPASS_DAPF | DART_T8020_TCR_BYPASS_DART,
     .tcr_off = DART_T8020_TCR_OFF,
@@ -207,6 +227,9 @@ dart_dev_t *dart_init(uintptr_t base, u8 device, bool keep_pts, enum dart_type_t
         case DART_T8020:
             dart->params = &dart_t8020;
             break;
+        case DART_T8132:
+            dart->params = &dart_t8132;
+            break;
         case DART_T8110:
             dart->params = &dart_t8110;
             break;
@@ -224,6 +247,7 @@ dart_dev_t *dart_init(uintptr_t base, u8 device, bool keep_pts, enum dart_type_t
     switch (type) {
         case DART_T8020:
         case DART_T6000:
+        case DART_T8132:
             if (read32(dart->regs + DART_T8020_CONFIG) & DART_T8020_CONFIG_LOCK)
                 dart->locked = true;
             set32(dart->regs + DART_T8020_ENABLED_STREAMS, BIT(device & 0x1f));
@@ -301,6 +325,9 @@ dart_dev_t *dart_init_adt(const char *path, int instance, int device, bool keep_
     } else if (adt_is_compatible(adt, node, "dart,t8110")) {
         type = DART_T8110;
         type_s = "t8110";
+    } else if (adt_is_compatible(adt, node, "dart,t8132")) {
+        type = DART_T8132;
+        type_s = "t8132";
     } else {
         printf("dart: dart %s at 0x%lx is of an unknown type\n", path, base);
         return NULL;
@@ -362,6 +389,9 @@ void dart_lock_adt(const char *path, int instance)
     } else if (adt_is_compatible(adt, node, "dart,t8110")) {
         if (!(read32(base + DART_T8110_PROTECT) & DART_T8110_PROTECT_TTBR_TCR))
             set32(base + DART_T8110_PROTECT, DART_T8110_PROTECT_TTBR_TCR);
+    } else if (adt_is_compatible(adt, node, "dart,t8132")) {
+        if (!(read32(base + DART_T8020_CONFIG) & DART_T8020_CONFIG_LOCK))
+            set32(base + DART_T8020_CONFIG, DART_T8020_CONFIG_LOCK);
     } else {
         printf("dart: dart %s at 0x%lx is of an unknown type\n", path, base);
     }
@@ -386,6 +416,10 @@ dart_dev_t *dart_init_fdt(void *dt, u32 phandle, int device, bool keep_pts)
     if (fdt_node_check_compatible(dt, node, "apple,t8103-dart") == 0) {
         type = DART_T8020;
         type_s = "t8020";
+    } else if (fdt_node_check_compatible(dt, node, "apple,t8132-dart") == 0) {
+        type = DART_T8132;
+        type_s = "t8132";
+        printf("aaaaaa");
     } else if (fdt_node_check_compatible(dt, node, "apple,t6000-dart") == 0) {
         type = DART_T6000;
         type_s = "t6000";
@@ -580,7 +614,7 @@ static void dart_unmap_page(dart_dev_t *dart, uintptr_t iova)
     if (!(dart->l1[ttbr][l1_index] & DART_PTE_VALID))
         return;
 
-    u64 *l2 = dart_get_l2(dart, l1_index);
+    u64 *l2 = dart_get_l2(dart, (ttbr << 11) | l1_index);
     l2[l2_index] = 0;
 }
 
@@ -742,7 +776,7 @@ void dart_shutdown(dart_dev_t *dart)
     for (int ttbr = 0; ttbr < dart->params->ttbr_count; ++ttbr) {
         for (int i = 0; i < SZ_16K / 8; ++i) {
             if (dart->l1[ttbr][i] & DART_PTE_VALID) {
-                void *l2 = dart_get_l2(dart, i);
+                void *l2 = dart_get_l2(dart, (ttbr << 11) | i);
                 if (is_heap(l2)) {
                     free(l2);
                     dart->l1[ttbr][i] = 0;
