@@ -59,8 +59,8 @@ static u32 pstate_reg_to_pstate(u64 val)
         case T8010:
         case T8011:
         case T8012:
-        case T8132:
         case T8015:
+        case T8132:
         case T8103:
         case T6000:
         case T6001:
@@ -105,8 +105,8 @@ static int set_pstate(const struct cluster_t *cluster, uint32_t pstate)
                 /* fallthrough */
             case T8112:
             case T6020:
-            case T6021:
             case T8132:
+            case T6021:
             case T6022:
             case T6031:
                 val &= ~CLUSTER_PSTATE_DESIRED1;
@@ -181,8 +181,8 @@ int cpufreq_init_cluster(const struct cluster_t *cluster, const struct feat_t *f
         case T8010:
         case T8011:
         case T8012:
-        case T8015:
         case T8132:
+        case T8015:
             /*
              * On T8015 this will result in the register being written
              * two times (for two clusters). However, this is fine.
@@ -259,11 +259,12 @@ void cpufreq_fixup_cluster(const struct cluster_t *cluster)
             case T8112:
             case T6020:
             case T6021:
+            case T8132:
+                bits = CLUSTER_PSTATE_UNK_M4;
             case T6022:
                 bits = CLUSTER_PSTATE_UNK_M2;
                 break;
-            case T8132:
-                bits = CLUSTER_PSTATE_UNK_M4;
+
             default:
                 return;
         }
@@ -313,18 +314,18 @@ static const struct cluster_t t8015_clusters[] = {
     {"PCPU", 0x208e80000, true, 2, 7},
     {},
 };
-
-static const struct cluster_t t8103_clusters[] = {
-    {"ECPU", 0x210e00000, false, 1, 5},
-    {"PCPU", 0x211e00000, true, 1, 7},
-    {},
-};
 static const struct cluster_t t8132_clusters[] = {
     {"ECPU", 0x210F00000, false, 1, 5},
    {"PCPU",  0x210E40000, true,  1,   7 },
     {},
 
 };
+static const struct cluster_t t8103_clusters[] = {
+    {"ECPU", 0x210e00000, false, 1, 5},
+    {"PCPU", 0x211e00000, true, 1, 7},
+    {},
+};
+
 static const struct cluster_t t6000_clusters[] = {
     {"ECPU0", 0x210e00000, false, 1, 5},
     {"PCPU0", 0x211e00000, true, 1, 7},
