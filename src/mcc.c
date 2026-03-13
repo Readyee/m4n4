@@ -11,6 +11,12 @@ static bool mcc_initialized = false;
 
 #define MAX_MCC_INSTANCES 16
 
+
+#define T8132_PLANES       4
+#define T8132_PLANE_STRIDE 0x40000
+#define T8132_DCS_STRIDE   0x40000
+
+
 #define T8103_PLANES       4
 #define T8103_PLANE_STRIDE 0x40000
 #define T8103_DCS_STRIDE   0x40000
@@ -47,6 +53,10 @@ struct tz_regs t8103_tz_regs = {
     .enable = 0x6a8,
 };
 
+struct tz_regs t8132_tz_regs = {
+  .count = 4
+};
+
 struct tz_regs t602x_tz_regs = {
     .count = 4,
     .stride = 0x14,
@@ -54,6 +64,8 @@ struct tz_regs t602x_tz_regs = {
     .end = 0x6c0,
     .enable = 0x6c8,
 };
+
+
 
 struct tz_regs t603x_tz_regs = {
     .count = 4,
