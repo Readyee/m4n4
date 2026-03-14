@@ -12,7 +12,7 @@
 #define CLUSTER_PSTATE_FIXED_FREQ_PLL_RECLOCK BIT(42)
 #define CLUSTER_PSTATE_BUSY                   BIT(31)
 #define CLUSTER_PSTATE_SET                    BIT(25)
-#define CLUSTER_PSTATE_M4_APSC_DIS            BIT(25)
+#define CLUSTER_PSTATE_M_APSC_DIS             BIT(25)
 #define CLUSTER_PSTATE_M2_APSC_DIS            BIT(23)
 #define CLUSTER_PSTATE_M1_APSC_DIS            BIT(22)
 #define CLUSTER_PSTATE_UNK_M4                 BIT(21)
@@ -60,12 +60,12 @@ static u32 pstate_reg_to_pstate(u64 val)
         case T8011:
         case T8012:
         case T8015:
-        case T8132:
         case T8103:
         case T6000:
         case T6001:
         case T6002:
         case T8112:
+        case T8132:
         case T6020:
         case T6021:
         case T6022:
@@ -105,8 +105,8 @@ static int set_pstate(const struct cluster_t *cluster, uint32_t pstate)
                 /* fallthrough */
             case T8112:
             case T6020:
-            case T8132:
             case T6021:
+            case T8132:
             case T6022:
             case T6031:
                 val &= ~CLUSTER_PSTATE_DESIRED1;
@@ -224,12 +224,6 @@ int cpufreq_init_cluster(const struct cluster_t *cluster, const struct feat_t *f
             write64(cluster->base + 0x7fff0, hi);
             break;
         }
-        case T8132: {
-            u64 lo = read64(cluster->base + 0x80000 + cluster->apsc_pstate * 0x40);
-            u64 hi = read64(cluster->base + 0x80000 + cluster->apsc_pstate * 0x40);  // BUG: Same offset!
-            write64(cluster->base + 0x80008, lo);
-            write64(cluster->base + 0x80008, hi);  // BUG: Same write address!
-        }
     }
 
     /* Default P-State */
@@ -259,12 +253,12 @@ void cpufreq_fixup_cluster(const struct cluster_t *cluster)
             case T8112:
             case T6020:
             case T6021:
-            case T8132:
-                bits = CLUSTER_PSTATE_UNK_M4;
             case T6022:
                 bits = CLUSTER_PSTATE_UNK_M2;
                 break;
-
+            case T8132:
+                bits = CLUSTER_PSTATE_UNK_M4;
+                break;
             default:
                 return;
         }
@@ -316,9 +310,8 @@ static const struct cluster_t t8015_clusters[] = {
 };
 static const struct cluster_t t8132_clusters[] = {
     {"ECPU", 0x210F00000, false, 1, 5},
-   {"PCPU",  0x210E40000, true,  1,   7 },
+    {"PCPU", 0x210E40000, true, 1, 7},
     {},
-
 };
 static const struct cluster_t t8103_clusters[] = {
     {"ECPU", 0x210e00000, false, 1, 5},
@@ -406,6 +399,8 @@ const struct cluster_t *cpufreq_get_clusters(void)
             return t6000_clusters;
         case T6002:
             return t6002_clusters;
+        case T8132:
+            return t8132_clusters;
         case T8112:
             return t8112_clusters;
         case T6020:
@@ -415,8 +410,6 @@ const struct cluster_t *cpufreq_get_clusters(void)
             return t6022_clusters;
         case T6030:
             return t6030_clusters;
-        case T8132:
-            return t8132_clusters;
         case T6031:
             return t6031_clusters;
         default:
@@ -449,6 +442,7 @@ static const struct feat_t t8132_features[] = {
     {"cpu-apsc", 0x80, BIT(14), 0, BIT(0), false},
     {"cpu-fixed-freq-pll-relock", 0x88, 0, BIT(15), 0, false},
     {},
+
 };
 
 static const struct feat_t t8103_features[] = {
@@ -529,12 +523,12 @@ const struct feat_t *cpufreq_get_features(void)
             return t8103_features;
         case T8112:
             return t8112_features;
-        case T8132:
-            return t8132_features;
         case T6020:
         case T6021:
         case T6022:
             return t6020_features;
+        case T8132:
+            return t8132_features;
         case T6030:
             return t6030_features;
         case T6031:
