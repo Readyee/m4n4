@@ -14,6 +14,7 @@
 enum dptx_type {
     DPTX_PHY_T8112,
     DPTX_PHY_T602X,
+    DPTX_PHY_T8132,
 };
 
 typedef struct dptx_phy {
@@ -454,6 +455,7 @@ u32 dptx_phy_dcp_output(dptx_phy_t *phy)
             return 5;
         case DPTX_PHY_T602X:
             return 4;
+
         default:
             return 5;
     }

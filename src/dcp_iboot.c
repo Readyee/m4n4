@@ -141,7 +141,15 @@ dcp_iboot_if_t *dcp_ib_init(dcp_dev_t *dcp)
     int err =
         afk_epic_start_interface(iboot->epic, iboot, DCP_IBOOT_NUM_SERVICES, TXBUF_LEN, RXBUF_LEN);
 
+    if
+
+
     if (err < 0 || !iboot->enabled) {
+        if (err < 0 ) {
+            printf("dcp-iboot problem err has eccured or epic is known\n");
+        }else if (!iboot->enabled) {
+            printf("iboot did was not supported\n");
+        }
         printf("dcp-iboot: failed to initialize disp0 service\n");
         goto err_shutdown;
     }
@@ -287,7 +295,6 @@ int dcp_ib_swap_set_layer(dcp_iboot_if_t *iboot, int layer_id, dcp_layer_t *laye
     else
         return swap_set_layer_v13_3(iboot, layer_id, layer, src_rect, dst_rect);
 }
-
 int dcp_ib_swap_end(dcp_iboot_if_t *iboot)
 {
     memset(iboot->txcmd.payload, 0, 12);

@@ -89,6 +89,28 @@ static const display_config_t display_config_m2_pro_max = {
     .dp2hdmi_gpio = "/arm-io/dp2hdmi-gpio0",
     .dptx_phy = "/arm-io/lpdptx-phy0",
 };
+static const display_config_t display_config_m4 = {
+#if USE_DCPEXT
+        .dcp = "/arm-io/dcpext0",
+        .dcp_dart = "/arm-io/dart-dcpext0",
+        .disp_dart = "/arm-io/dart-disp0",
+        .pmgr_dev = "DISPEXT0_CPU0",
+        .dcp_alias = "dcpext0",
+        .dcp_index = 1,
+        .num_dptxports = 2,
+#else
+    .dcp = "/arm-io/dcp0",
+    .dcp_dart = "/arm-io/dart-dcp0",
+    .disp_dart = "/arm-io/dart-disp0",
+    .pmgr_dev = "DISP0_CPU0",
+    .dcp_alias = "dcp",
+    .dcp_index = 0,
+    .num_dptxports = 1,
+#endif
+    .dp2hdmi_gpio = "/arm-io/dp2hdmi-gpio0",
+    .dptx_phy = "/arm-io/lpdptx-phy0",
+};
+
 
 static const display_config_t display_config_m2_ultra = {
     .dcp = "/arm-io/dcpext4",
@@ -253,6 +275,8 @@ const display_config_t *display_get_config(void)
         conf = &display_config_m2_pro_max;
     else if (adt_is_compatible(adt, 0, "J180dAP") || adt_is_compatible(adt, 0, "J475dAP"))
         conf = &display_config_m2_ultra;
+    else if (adt_is_compatible(adt, 0, "J773g"))
+        conf = &display_config_m4;
     else
         conf = &display_config_m1;
 
